@@ -10,12 +10,16 @@ jobs:
     env:
       APP_NAME: nemo-asr  # Название приложения
       APP_VERSION: v1.0.0 # Версия приложения
+      VOSK_DIR: vosk-service 
     steps:
     - uses: actions/checkout@v4
     
     - name: Build, login and push
       run: |
-        # Build with env variables
+        cd $VOSK_DIR
+
+        ls -la
+
         docker build -t $APP_NAME .
         
         # Login to YCR
@@ -23,7 +27,7 @@ jobs:
           --username ${{ secrets.YC_ACCESS_KEY }} \
           --password-stdin cr.yandex
         
-        # Tag and push with env variables
+       
         docker tag $APP_NAME cr.yandex/${{ secrets.YC_REGISTRY_ID }}/$APP_NAME:$APP_VERSION
         docker tag $APP_NAME cr.yandex/${{ secrets.YC_REGISTRY_ID }}/$APP_NAME:latest
         

@@ -1,0 +1,29 @@
+
+*.py text eol=lf
+*.txt text eol=lf
+*.md text eol=lf
+*.conf text eol=lf
+README text eol=lf
+
+ai_model/vosk-model-small-ru-0.22/**/*.mdl binary
+ai_model/vosk-model-small-ru-0.22/**/*.mat binary
+ai_model/vosk-model-small-ru-0.22/**/*.fst binary
+ai_model/vosk-model-small-ru-0.22/**/*.int binary
+ai_model/vosk-model-small-ru-0.22/**/*.stats binary
+ai_model/vosk-model-small-ru-0.22/**/final.mdl binary
+ai_model/vosk-model-small-ru-0.22/**/HCLG.fst binary
+
+*.nemo binary
+*.pt binary
+*.mdl binary
+*.mat binary
+*.fst binary
+*.int binary
+*.stats binary
+*.ubinary
+
+
+*.nemo -diff
+*.pt -diff
+
+ai_model/vosk-model-small-ru-0.22/** -text
