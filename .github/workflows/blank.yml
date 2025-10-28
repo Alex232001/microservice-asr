@@ -23,8 +23,10 @@ jobs:
         docker build -t $APP_NAME .
         
         # Login to YCR
-        echo "${{ secrets.YC_SECRET_KEY }}" | docker login \
-          --username ${{ secrets.YC_ACCESS_KEY }} \
+    - name: Login to YCR with JSON Key
+      run: |
+        echo '${{ secrets.YC_JSON_KEY }}' | docker login \
+          --username json_key \
           --password-stdin cr.yandex
         
        
