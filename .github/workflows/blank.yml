@@ -19,7 +19,6 @@ jobs:
         cd $VOSK_DIR
 
         ls -la
-
         docker build -t $APP_NAME .
         
         # Login to YCR
