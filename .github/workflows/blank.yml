@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:  
+  test1:
+    runs-on: ubuntu-latest
+    env:
+      APP_NAME: nemo-asr  # Название приложения
+      APP_VERSION: v1.0.0 # Версия приложения
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Build, login and push
+      run: |
+        # Build with env variables
+        docker build -t $APP_NAME .
+        
+        # Login to YCR
+        echo "${{ secrets.YC_SECRET_KEY }}" | docker login \
+          --username ${{ secrets.YC_ACCESS_KEY }} \
+          --password-stdin cr.yandex
+        
+        # Tag and push with env variables
+        docker tag $APP_NAME cr.yandex/${{ secrets.YC_REGISTRY_ID }}/$APP_NAME:$APP_VERSION
+        docker tag $APP_NAME cr.yandex/${{ secrets.YC_REGISTRY_ID }}/$APP_NAME:latest
+        
+        docker push cr.yandex/${{ secrets.YC_REGISTRY_ID }}/$APP_NAME:$APP_VERSION
+        docker push cr.yandex/${{ secrets.YC_REGISTRY_ID }}/$APP_NAME:latest
+
+    - name: Analyze image size
+      run: |
+        echo "=== АНАЛИЗ РАЗМЕРА DOCKER ОБРАЗА ==="
+        echo ""
+        
+        # Получаем общий размер образа (используем переменную APP_NAME)
+        SIZE_BYTES=$(docker image inspect $APP_NAME:latest --format='{{.Size}}')
+        SIZE_GB=$(echo "scale=2; $SIZE_BYTES / 1024 / 1024 / 1024" | bc -l)
+        
+        echo "ОБЩИЙ РАЗМЕР ОБРАЗА $APP_NAME:$APP_VERSION: $SIZE_GB GB"
+        echo ""
