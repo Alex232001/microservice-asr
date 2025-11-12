@@ -26,6 +26,13 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+
+    - name: Debug - List directories
+      run: |
+        echo "=== Содержимое репозитория ==="
+        ls -la
+        echo "=== Проверка существования папок сервисов ==="
+        [ -d "${{ matrix.service.path }}" ] && echo "✅ Папка ${{ matrix.service.path }} существует" || echo "❌ Папка ${{ matrix.service.path }} не существует"
     
     - name: Build Docker image
       run: |
