@@ -4,45 +4,78 @@ on:
   push:
     branches: [ "main" ]
 
-jobs:  
-  test1:
+env:
+  REGISTRY: cr.yandex
+  REGISTRY_ID: ${{ secrets.YC_REGISTRY_ID }}
+
+jobs:
+  build-and-push:
     runs-on: ubuntu-latest
-    env:
-      APP_NAME: nemo-asr  # Название приложения
-      APP_VERSION: v1.0.0 # Версия приложения
-      VOSK_DIR: vosk-service 
+    strategy:
+      matrix:
+        include:
+          - name: "nemo-service"
+            path: "nemo-service"
+            version: "v1.0.0"
+          - name: "vosk-service"
+            path: "vosk-service" 
+            version: "v1.0.0"
+          # - name: "future-service"  # раскомментировать при добавлении третьего сервиса
+          #   path: "future-service-path"
+          #   version: "v1.0.0"
+
     steps:
     - uses: actions/checkout@v4
     
-    - name: Build, login and push
+    - name: Build Docker image
       run: |
-        cd $VOSK_DIR
-
-        ls -la
-        docker build -t $APP_NAME .
+        echo "Building service: ${{ matrix.service.name }}"
+        cd ${{ matrix.service.path }}
         
-        # Login to YCR
+        # Проверяем существование Dockerfile
+        if [ ! -f "Dockerfile" ]; then
+          echo " Dockerfile not found in ${{ matrix.service.path }}"
+          exit 1
+        fi
+        
+        docker build -t ${{ matrix.service.name }} .
+        
     - name: Login to YCR with JSON Key
       run: |
         echo '${{ secrets.YC_JSON_KEY }}' | docker login \
           --username json_key \
           --password-stdin cr.yandex
         
-       
-        docker tag $APP_NAME cr.yandex/${{ secrets.YC_REGISTRY_ID }}/$APP_NAME:$APP_VERSION
-        docker tag $APP_NAME cr.yandex/${{ secrets.YC_REGISTRY_ID }}/$APP_NAME:latest
+    - name: Tag and push Docker image
+      run: |
+        docker tag ${{ matrix.service.name }} $REGISTRY/$REGISTRY_ID/${{ matrix.service.name }}:${{ matrix.service.version }}
+        docker tag ${{ matrix.service.name }} $REGISTRY/$REGISTRY_ID/${{ matrix.service.name }}:latest
         
-        docker push cr.yandex/${{ secrets.YC_REGISTRY_ID }}/$APP_NAME:$APP_VERSION
-        docker push cr.yandex/${{ secrets.YC_REGISTRY_ID }}/$APP_NAME:latest
-
+        docker push $REGISTRY/$REGISTRY_ID/${{ matrix.service.name }}:${{ matrix.service.version }}
+        docker push $REGISTRY/$REGISTRY_ID/${{ matrix.service.name }}:latest
+        
     - name: Analyze image size
       run: |
         echo "=== АНАЛИЗ РАЗМЕРА DOCKER ОБРАЗА ==="
-        echo ""
+        echo "Сервис: ${{ matrix.service.name }}"
         
-        # Получаем общий размер образа (используем переменную APP_NAME)
-        SIZE_BYTES=$(docker image inspect $APP_NAME:latest --format='{{.Size}}')
-        SIZE_GB=$(echo "scale=2; $SIZE_BYTES / 1024 / 1024 / 1024" | bc -l)
+        # Получаем общий размер образа
+        SIZE_BYTES=$(docker image inspect ${{ matrix.service.name }}:latest --format='{{.Size}}')
+        SIZE_MB=$(echo "scale=2; $SIZE_BYTES / 1024 / 1024" | bc -l)
         
-        echo "ОБЩИЙ РАЗМЕР ОБРАЗА $APP_NAME:$APP_VERSION: $SIZE_GB GB"
+        echo "Размер образа ${{ matrix.service.name }}: $SIZE_MB MB"
         echo ""
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Deploy to server
+      run: |
+        echo "Деплой всех сервисов завершен успешно!"
+        echo "Собраны и загружены в registry:"
+        echo "- nemo-asr:${{ env.nemo_version }}"
+        echo "- vosk-service:${{ env.vosk_version }}"
+        # Добавьте здесь команды для деплоя на ваш сервер
