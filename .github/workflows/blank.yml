@@ -20,32 +20,45 @@ jobs:
           - name: "vosk-service"
             path: "vosk-service" 
             version: "v1.0.0"
-          # - name: "future-service"  # раскомментировать при добавлении третьего сервиса
-          #   path: "future-service-path"
-          #   version: "v1.0.0"
 
     steps:
     - uses: actions/checkout@v4
-
+    
     - name: Debug - List directories
       run: |
         echo "=== Содержимое репозитория ==="
         ls -la
-        echo "=== Проверка существования папок сервисов ==="
-        [ -d "${{ matrix.service.path }}" ] && echo "✅ Папка ${{ matrix.service.path }} существует" || echo "❌ Папка ${{ matrix.service.path }} не существует"
+        echo "=== Проверка существования папки ${{ matrix.path }} ==="
+        if [ -d "${{ matrix.path }}" ]; then
+          echo "Папка ${{ matrix.path }} существует"
+          echo "=== Содержимое папки ${{ matrix.path }} ==="
+          ls -la "${{ matrix.path }}"
+        else
+          echo "Папка ${{ matrix.path }} не существует"
+        fi
     
     - name: Build Docker image
       run: |
-        echo "Building service: ${{ matrix.service.name }}"
-        cd ${{ matrix.service.path }}
+        echo "Building service: ${{ matrix.name }}"
+        echo "Path: ${{ matrix.path }}"
         
-        # Проверяем существование Dockerfile
-        if [ ! -f "Dockerfile" ]; then
-          echo " Dockerfile not found in ${{ matrix.service.path }}"
+        # Проверяем существование папки и Dockerfile
+        if [ ! -d "${{ matrix.path }}" ]; then
+          echo "Directory ${{ matrix.path }} not found"
           exit 1
         fi
         
-        docker build -t ${{ matrix.service.name }} .
+        cd "${{ matrix.path }}"
+        echo "Текущая директория: $(pwd)"
+        echo "Содержимое:"
+        ls -la
+        
+        if [ ! -f "Dockerfile" ]; then
+          echo "Dockerfile not found in ${{ matrix.path }}"
+          exit 1
+        fi
+        
+        docker build -t ${{ matrix.name }} .
         
     - name: Login to YCR with JSON Key
       run: |
@@ -55,22 +68,22 @@ jobs:
         
     - name: Tag and push Docker image
       run: |
-        docker tag ${{ matrix.service.name }} $REGISTRY/$REGISTRY_ID/${{ matrix.service.name }}:${{ matrix.service.version }}
-        docker tag ${{ matrix.service.name }} $REGISTRY/$REGISTRY_ID/${{ matrix.service.name }}:latest
+        docker tag ${{ matrix.name }} $REGISTRY/$REGISTRY_ID/${{ matrix.name }}:${{ matrix.version }}
+        docker tag ${{ matrix.name }} $REGISTRY/$REGISTRY_ID/${{ matrix.name }}:latest
         
-        docker push $REGISTRY/$REGISTRY_ID/${{ matrix.service.name }}:${{ matrix.service.version }}
-        docker push $REGISTRY/$REGISTRY_ID/${{ matrix.service.name }}:latest
+        docker push $REGISTRY/$REGISTRY_ID/${{ matrix.name }}:${{ matrix.version }}
+        docker push $REGISTRY/$REGISTRY_ID/${{ matrix.name }}:latest
         
     - name: Analyze image size
       run: |
         echo "=== АНАЛИЗ РАЗМЕРА DOCKER ОБРАЗА ==="
-        echo "Сервис: ${{ matrix.service.name }}"
+        echo "Сервис: ${{ matrix.name }}"
         
         # Получаем общий размер образа
-        SIZE_BYTES=$(docker image inspect ${{ matrix.service.name }}:latest --format='{{.Size}}')
+        SIZE_BYTES=$(docker image inspect ${{ matrix.name }}:latest --format='{{.Size}}')
         SIZE_MB=$(echo "scale=2; $SIZE_BYTES / 1024 / 1024" | bc -l)
         
-        echo "Размер образа ${{ matrix.service.name }}: $SIZE_MB MB"
+        echo "Размер образа ${{ matrix.name }}: $SIZE_MB MB"
         echo ""
 
   deploy:
@@ -83,6 +96,5 @@ jobs:
       run: |
         echo "Деплой всех сервисов завершен успешно!"
         echo "Собраны и загружены в registry:"
-        echo "- nemo-asr:${{ env.nemo_version }}"
-        echo "- vosk-service:${{ env.vosk_version }}"
-        # Добавьте здесь команды для деплоя на ваш сервер
+        echo "- nemo-service:v1.0.0"
+        echo "- vosk-service:v1.0.0"
