@@ -44,6 +44,7 @@ FROM ubuntu:22.04
 # Устанавливаем системные зависимости
 RUN apt-get update && apt-get install -y \
     python3 \
+    wget \
     python3-pip \
     ffmpeg \
     && rm -rf /var/lib/apt/lists/* \
