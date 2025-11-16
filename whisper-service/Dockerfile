@@ -1,0 +1,78 @@
+# Этап 1: Сборка whisper.cpp
+FROM ubuntu:22.04 as builder
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /workspace
+
+RUN git clone https://github.com/ggerganov/whisper.cpp.git && \
+    cd whisper.cpp && \
+    mkdir build && cd build && \
+    cmake .. && \
+    make -j$(nproc)
+
+RUN mkdir -p /whisper-dist/bin /whisper-dist/lib
+
+
+
+RUN cp /workspace/whisper.cpp/build/bin/whisper-cli /whisper-dist/bin/
+RUN cp /workspace/whisper.cpp/build/bin/main /whisper-dist/bin/
+RUN cp /workspace/whisper.cpp/build/src/libwhisper.so.1.8.2 /whisper-dist/lib/
+RUN cp /workspace/whisper.cpp/build/src/libwhisper.so.1 /whisper-dist/lib/
+RUN cp /workspace/whisper.cpp/build/ggml/src/libggml.so /whisper-dist/lib/
+RUN cp /workspace/whisper.cpp/build/ggml/src/libggml-base.so /whisper-dist/lib/
+RUN cp /workspace/whisper.cpp/build/ggml/src/libggml-cpu.so /whisper-dist/lib/
+
+
+
+#RUN cp /workspace/whisper.cpp/build/bin/whisper-cli /whisper-dist/bin/
+#RUN cp /workspace/whisper.cpp/build/src/libwhisper.so.1.8.2 /whisper-dist/lib/ && \
+#    cp /workspace/whisper.cpp/build/ggml/src/libggml.so /whisper-dist/lib/
+
+RUN cd /whisper-dist/lib && \
+    ln -s libwhisper.so.1.8.2 libwhisper.so
+
+# Этап 2: Финальный образ
+FROM ubuntu:22.04
+
+# Устанавливаем системные зависимости
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    ffmpeg \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+WORKDIR /app
+
+# Копируем whisper-cli и библиотеки из этапа сборки
+COPY --from=builder /whisper-dist/bin/* /usr/local/bin/
+COPY --from=builder /whisper-dist/lib/* /usr/local/lib/
+
+# Обновляем кэш библиотек
+RUN ldconfig
+
+# Копируем ВСЕ файлы из текущей директории
+COPY . .
+#
+RUN wget --no-check-certificate "https://drive.google.com/file/d/1jF3-yjhjzYdo-kAEnu4jFHNjv6z2rNo1/view?usp=drive_link" -O ggml_small.bin
+#
+# Устанавливаем Python зависимости
+RUN pip3 install --no-cache-dir -r requirements.txt
+
+# Создаем директорию для временных файлов
+RUN mkdir -p /tmp/whisper
+
+# Проверяем что все на месте
+
+# Открываем порт для FastAPI
+EXPOSE 8004
+
+# Запускаем приложение
+CMD ["python3", "app.py"]

@@ -14,9 +14,13 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: "nemo-service"
-            path: "nemo-service"
+          #- name: "nemo-service"
+          #  path: "nemo-service"
+          #  version: "v1.0.0"
+          - name: "whisper-service"
+            path: "whisper-service" 
             version: "v1.0.0"
+
           - name: "vosk-service"
             path: "vosk-service" 
             version: "v1.0.0"
@@ -96,5 +100,5 @@ jobs:
       run: |
         echo "Деплой всех сервисов завершен успешно!"
         echo "Собраны и загружены в registry:"
-        echo "- nemo-service:v1.0.0"
+        echo "- whisper-service:v1.0.0"
         echo "- vosk-service:v1.0.0"
