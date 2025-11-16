@@ -61,7 +61,7 @@ RUN ldconfig
 # Копируем ВСЕ файлы из текущей директории
 COPY . .
 #
-RUN wget --no-check-certificate "https://drive.google.com/file/d/1jF3-yjhjzYdo-kAEnu4jFHNjv6z2rNo1/view?usp=drive_link" -O ggml_small.bin
+RUN wget "https://storage.yandexcloud.net/ai-models-stellarclaw/whisper/ggml_small.bin" -O ggml_small.bin
 #
 # Устанавливаем Python зависимости
 RUN pip3 install --no-cache-dir -r requirements.txt
