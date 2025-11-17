@@ -61,7 +61,7 @@ RUN ldconfig
 
 # Копируем ВСЕ файлы из текущей директории
 COPY . .
-#
+###########################################
 RUN wget "https://storage.yandexcloud.net/ai-models-stellarclaw/whisper/ggml_small.bin" -O ggml_small.bin
 #
 # Устанавливаем Python зависимости

@@ -124,7 +124,7 @@ class WhisperCLITranscriber:
             
             # Проверяем доступность whisper-cli
             try:
-                result = subprocess.run(["whisper-cli.exe", "--help"], capture_output=True, text=True)
+                result = subprocess.run(["whisper-cli", "--help"], capture_output=True, text=True)
                 if result.returncode == 0:
                     print("Whisper-CLI успешно инициализирован")
                 else:
