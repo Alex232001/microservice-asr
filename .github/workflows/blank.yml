@@ -14,9 +14,9 @@ jobs:
     strategy:
       matrix:
         include:
-          #- name: "nemo-service"
-          #  path: "nemo-service"
-          #  version: "v1.0.0"
+          - name: "nemo-service"
+            path: "nemo-service"
+            version: "v1.0.0"
           - name: "whisper-service"
             path: "whisper-service" 
             version: "v1.0.0"
