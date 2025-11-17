@@ -11,6 +11,7 @@ WORKDIR /app
 
 # Системные зависимости
 RUN apt-get update && apt-get install -y \
+    wget \
     ffmpeg \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
