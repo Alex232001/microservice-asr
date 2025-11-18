@@ -4,6 +4,8 @@ WORKDIR /app
 
 COPY requirements.txt .
 
+# Устанавливаем setuptools и wheel сначала
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel
 RUN pip install --no-cache-dir -r requirements.txt
 
 FROM python:3.12-slim
@@ -22,6 +24,9 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 
 # Копируем код приложения
 COPY app.py .
+
+# Убедимся что setuptools установлен
+RUN pip install --no-cache-dir setuptools
 
 #################################################################
 RUN wget "https://storage.yandexcloud.net/ai-models-stellarclaw/nemo/model.onnx" -O model.onnx
