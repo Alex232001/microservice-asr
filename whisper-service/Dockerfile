@@ -1,4 +1,4 @@
-# Этап 1: Сборка whisper.cpp
+# Этап 1: Сборка whisper.cpp с совместимыми флагами
 FROM ubuntu:22.04 as builder
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -14,12 +14,15 @@ WORKDIR /workspace
 RUN git clone https://github.com/ggerganov/whisper.cpp.git && \
     cd whisper.cpp && \
     mkdir build && cd build && \
-    cmake .. && \
+    cmake .. \
+        -DWHISPER_NO_AVX=ON \
+        -DWHISPER_NO_AVX2=ON \
+        -DWHISPER_NO_F16C=ON \
+        -DWHISPER_NO_FMA=ON \
+        -DCMAKE_C_FLAGS="-march=x86-64 -mtune=generic" && \
     make -j$(nproc)
 
 RUN mkdir -p /whisper-dist/bin /whisper-dist/lib
-
-
 
 RUN cp /workspace/whisper.cpp/build/bin/whisper-cli /whisper-dist/bin/
 RUN cp /workspace/whisper.cpp/build/bin/main /whisper-dist/bin/
@@ -28,12 +31,6 @@ RUN cp /workspace/whisper.cpp/build/src/libwhisper.so.1 /whisper-dist/lib/
 RUN cp /workspace/whisper.cpp/build/ggml/src/libggml.so /whisper-dist/lib/
 RUN cp /workspace/whisper.cpp/build/ggml/src/libggml-base.so /whisper-dist/lib/
 RUN cp /workspace/whisper.cpp/build/ggml/src/libggml-cpu.so /whisper-dist/lib/
-
-
-
-#RUN cp /workspace/whisper.cpp/build/bin/whisper-cli /whisper-dist/bin/
-#RUN cp /workspace/whisper.cpp/build/src/libwhisper.so.1.8.2 /whisper-dist/lib/ && \
-#    cp /workspace/whisper.cpp/build/ggml/src/libggml.so /whisper-dist/lib/
 
 RUN cd /whisper-dist/lib && \
     ln -s libwhisper.so.1.8.2 libwhisper.so
@@ -61,19 +58,21 @@ RUN ldconfig
 
 # Копируем ВСЕ файлы из текущей директории
 COPY . .
+
 ###########################################
 RUN wget "https://storage.yandexcloud.net/ai-models-stellarclaw/whisper/ggml_small.bin" -O ggml_small.bin
-#
+
 # Устанавливаем Python зависимости
 RUN pip3 install --no-cache-dir -r requirements.txt
 
 # Создаем директорию для временных файлов
 RUN mkdir -p /tmp/whisper
 
-# Проверяем что все на месте
+# Проверяем что whisper-cli работает
+RUN whisper-cli --help
 
 # Открываем порт для FastAPI
 EXPOSE 8004
 
-# Запускаем приложение
-CMD ["python3", "app.py"]
+# Запускаем приложение с unbuffered output
+CMD ["python3", "-u", "app.py"]
